@@ -21,7 +21,7 @@ import scala.util.{Failure, Success}
 
 case class Store(name: String, content: String)
 
-object HappyFreshStores extends App {
+object HappyStoresCrawl extends App {
   import scala.concurrent.duration._
   import scala.language.postfixOps
   implicit val system = ActorSystem()
@@ -32,6 +32,14 @@ object HappyFreshStores extends App {
   private val ws = StandaloneAhcWSClient()
   private implicit val ec: ExecutionContextExecutor = global
 
+  val input = List (
+    (1, -6.262529d, 106.784251d), // Jaksel
+    (2, -6.180511300000001d, 106.8283831d), // Jakarta Pusat
+    (3, -6.1554057d, 106.8926634d), // Jakut
+    (4, -6.1486651d, 106.7352584d), // Jakbar
+    (5, -6.225013800000001d, 106.9004472d), // Jaktim
+    (6, -6.917463899999999d, 107.6191228d) // Bandung
+  )
   def getAreaStores(lat: Double, lng: Double): Future[StandaloneWSResponse]  =
     ws.url(s"https://gvg1d6u3wk.execute-api.ap-southeast-1.amazonaws.com/prod/sprinkles/v2/stock_locations/nearby?get_next_available_slot=1&lat=$lat&lon=$lng")
       .addHttpHeaders("X-Spree-Client-Token" -> "0115f406e71219ec9ea58e2eaaa4480ef966bdc42e245ec4bf601b23f07bd48e")
@@ -55,16 +63,6 @@ object HappyFreshStores extends App {
     Thread.sleep(i * 500)
     getAreaStores(lat, lng) .map(_.body).map(parserAreaStores)  recoverWith{case e => futAreaStore(i, lat, lng)}
   }
-
-  val input = List (
-    (1, -6.262529d, 106.784251d), // Jaksel
-    (2, -6.180511300000001d, 106.8283831d), // Jakarta Pusat
-    (3, -6.1554057d, 106.8926634d), // Jakut
-    (4, -6.1486651d, 106.7352584d), // Jakbar
-    (5, -6.225013800000001d, 106.9004472d), // Jaktim
-    (6, -6.917463899999999d, 107.6191228d) // Bandung
-  )
-
 
   def writeFile(name: String, content: String): Unit = {
     val path = s"./happy/$name"

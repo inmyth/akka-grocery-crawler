@@ -32,7 +32,7 @@ object HappyImageCrawl {
 
    object Mode extends Enumeration {
     type Mode = Value
-    val ITEMS_REWRITE, ITEMS_MISSING, STORES_REWRITE = Value
+    val ITEMS_REWRITE, ITEMS_MISSING, STORES_REWRITE, STORES_MISSING = Value
   }
 }
 
@@ -49,7 +49,7 @@ class HappyImageCrawl(root: String) extends Actor with MyLogging{
   private var ws = StandaloneAhcWSClient()
   private val qStores : mutable.Queue[File] = mutable.Queue.empty
 
-  val mode = Mode.ITEMS_MISSING
+  val mode = Mode.STORES_REWRITE
   val dirs = new File(root).listFiles.filter(_.isDirectory).toSeq
   qStores ++= dirs
   self ! "start"
@@ -71,9 +71,19 @@ class HappyImageCrawl(root: String) extends Actor with MyLogging{
           val x = buildProducts(dir.getPath, Utils.readFile(new File(dir.getPath + "/products.txt")).as[List[JsValue]]).filterNot(_.target.exists())
           if (x.isEmpty) self ! "start" else self ! DelayedHit(Cart(x.to[ListBuffer]))
 
-        case _ =>
+        case Mode.ITEMS_REWRITE =>
           val x = buildProducts(dir.getPath, Utils.readFile(new File(dir.getPath + "/products.txt")).as[List[JsValue]])
           self ! DelayedHit(Cart(x.to[ListBuffer]))
+
+        case Mode.STORES_REWRITE =>
+          val x = buildStores(dir.getPath, Utils.readFile(new File(dir.getPath + "/info.txt")))
+          self ! DelayedHit(Cart(x.to[ListBuffer]))
+
+        case Mode.STORES_MISSING =>
+          val x = buildStores(dir.getPath, Utils.readFile(new File(dir.getPath + "/info.txt"))).filterNot(_.target.exists())
+          if (x.isEmpty) self ! "start" else self ! DelayedHit(Cart(x.to[ListBuffer]))
+
+        case _ => println("Mode Undefined")
 
       }
 
@@ -129,6 +139,12 @@ class HappyImageCrawl(root: String) extends Actor with MyLogging{
         (imgId, imgUrl)
       }).map(p => TargetFile(List((new File(s"$storePath/products/")),(new File(s"$storePath/products/$itemId/"))), new File(s"$storePath/products/$itemId/${p._1}.jpg"), p._2))
     })
+  }
+
+  def buildStores(storePath: String, js: JsValue): List[TargetFile] = {
+    val im1 = (js \ "photo" \ "url").as[String]
+    val im2 = (js \ "supplier" \ "photo").as[String]
+    List((im1, 1), (im2, 2)).map(p => TargetFile(List(new File(s"$storePath/store")), new File(s"$storePath/store/${p._2}.jpg"), p._1))
   }
 
 }

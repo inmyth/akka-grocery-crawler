@@ -42,7 +42,6 @@ object HappyItemCrawl {
     val MISSING_ONLY, REWRITE = Value
   }
 
-
   case class ParseException(m: String) extends Exception(m)
 }
 
