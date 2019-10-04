@@ -2,16 +2,33 @@ package me.mbcu.crawler
 
 import java.io.File
 
+import me.mbcu.crawler.utils.Utils
+
+import scala.io.Source
+
 object Checker extends App{
 
-  def findProductsMissing() = {
-    val root = "./happy"
-    val jDir = new File(root)
-    jDir.listFiles.filter(_.isDirectory).map(p => new File(p.getPath + "/products.txt")).filterNot(_.exists())
-  }
+  val root = new File("./happy")
 
-  findProductsMissing().foreach(println)
+  def listDirs(f: File) = f.listFiles.filter(_.isDirectory)
+
+  def findProductsMissing() = listDirs(root).map(p => new File(p.getPath + "/products.txt")).filterNot(_.exists())
+
+
+
+
+  listDirs(root).map(p => {
+    val ownerId = Utils.readFile(new File(s"${p.getPath}/info.txt"))
+
+
+
+  })
+
 }
 
 
-
+/*
+    val ownerId = (Utils.readFile(new File(s"${p.getPath}/ownerId.txt")) \ "ownerId").as[Int]
+    val els = p.getName.split("-").drop(1).mkString(" ")
+    (els, ownerId)
+ */
